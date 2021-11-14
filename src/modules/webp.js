@@ -1,4 +1,4 @@
-function testWebP(callback) {
+function addWebp(callback) {
 
     const webP = new Image();
     webP.onload = webP.onerror = function () {
@@ -7,7 +7,7 @@ function testWebP(callback) {
     webP.src = "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA";
     }
     
-    testWebP(function (support) {
+    addWebp(function (support) {
     
     if (support == true) {
     document.querySelector('body').classList.add('webp');
@@ -16,4 +16,4 @@ function testWebP(callback) {
     }
     });
 
-export default testWebP;
+export default addWebp;

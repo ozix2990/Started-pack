@@ -1,6 +1,5 @@
 //===================================== Plugins =====================================//
 const gulp = require('gulp');
-const pug = require('gulp-pug');
 const browserSync = require('browser-sync').create();
 const sass = require('gulp-sass')(require('sass'));
 const autoprefixer = require('gulp-autoprefixer');
@@ -9,65 +8,103 @@ const sourcemap = require('gulp-sourcemaps');
 const del = require('del');
 const webpack = require('webpack-stream');
 const webpackConfig = require('./webpack.config');
+const fileinclude = require('gulp-file-include');
+const groupMedia = require('gulp-group-css-media-queries');
+const imagemin = require('gulp-imagemin');
+const webp = require('gulp-webp');
+const webpHtml = require('gulp-webp-html');
+const webpCss = require('gulp-webpcss');
 
 
 //===================================== Variables =====================================//
 const source_dir = 'src';
-const dist_dir   = 'dist';
+const dist_dir = 'dist';
 
 const source_pathes = {
-    main_pug: `${source_dir}/*.pug`,
-    all_pug: `${source_dir}/**/*.pug`,
-    main_sass: `${source_dir}/*.sass`,
-    all_sass: `${source_dir}/**/*.sass`,
+    main_pug: `${source_dir}/*.html`,
+    all_pug: `${source_dir}/**/*.html`,
+    main_sass: `${source_dir}/*.scss`,
+    all_sass: `${source_dir}/**/*.scss`,
     main_js: `${source_dir}/*.js`,
     all_js: `${source_dir}/**/*.js`,
+    img: `${source_dir}/images/**/*.{jpg,png,svg,gif,ico,webp}`,
+
 }
 const dist_pathes = {
     css: `${dist_dir}/css`,
     js: `${dist_dir}/js`,
+    img: `${dist_dir}/images`,
 }
 
-//============ Translate pug to html ============//
-function pugToHtml() {
+//============ build HTML ============//
+function toHTML() {
     return (
         gulp.src(source_pathes.main_pug)
-        .pipe(pug())
-        .pipe(gulp.dest(`${dist_dir}/`))
-        .pipe(browserSync.stream())
+            .pipe(fileinclude())
+            .pipe(webpHtml())
+            .pipe(gulp.dest(`${dist_dir}/`))
+            .pipe(browserSync.stream())
     )
-    
+
 }
-//============ Transtale sass to css ============//
-function sassToCss () {
+
+//============ build CSS ============//
+function toCSS() {
     return (
         gulp.src(source_pathes.main_sass)
-        .pipe(sourcemap.init())
-        .pipe(sass(
-            {
-                outputStyle: 'compressed'
-            }
-        ).on('error', sass.logError))
-        .pipe(autoprefixer({
-            cascade: false
-        }))
-        .pipe(rename({
-            suffix: '.min'
-        }))
-        .pipe(sourcemap.write(`./`))
-        .pipe(gulp.dest(dist_pathes.css))
-        .pipe(browserSync.stream())
+            .pipe(sourcemap.init())
+            .pipe(sass(
+                {
+                    outputStyle: 'compressed'
+                }
+            ).on('error', sass.logError))
+            .pipe(autoprefixer({
+                cascade: false
+            }))
+            .pipe(webpCss())
+            .pipe(groupMedia())
+            .pipe(rename({
+                suffix: '.min'
+            }))
+            .pipe(sourcemap.write(`./`))
+            .pipe(gulp.dest(dist_pathes.css))
+            .pipe(browserSync.stream())
     )
 }
-function js () {
+
+//============ build JS ============//
+
+function toJS() {
     return (
         gulp.src(source_pathes.main_js)
-        .pipe(webpack(webpackConfig))
-        .pipe(gulp.dest(dist_pathes.js))
+            .pipe(webpack(webpackConfig))
+            .pipe(gulp.dest(dist_pathes.js))
     )
 }
+
+//============ build images ============//
+
+function images() {
+    return (
+        gulp.src(source_pathes.img)
+            .pipe(webp({
+                quality: 70
+            }))
+            .pipe(gulp.dest(dist_pathes.img))
+            .pipe(gulp.src(source_pathes.img))
+            .pipe(imagemin({
+                progressive: true,
+                svgoPlugins: [{removeViewBox: false}],
+                interlaced: true,
+                optimizationLevel: 3
+            }))
+            .pipe(gulp.dest(dist_pathes.img))
+    )
+
+}
+
 //============ Browser Sync ============//
-function sync () {
+function sync() {
     browserSync.init({
         server: {
             baseDir: `./${dist_dir}`
@@ -76,18 +113,21 @@ function sync () {
         notify: false
     })
 }
-//============ Wathcer Functions ============//
-function watchFiles () {
-    gulp.watch(source_pathes.all_pug, pugToHtml)
-    gulp.watch(source_pathes.all_sass, sassToCss)
-    gulp.watch(source_pathes.all_js, js)
+
+//============ Watcher Functions ============//
+function watchFiles() {
+    gulp.watch(source_pathes.all_pug, toHTML)
+    gulp.watch(source_pathes.all_sass, toCSS)
+    gulp.watch(source_pathes.all_js, toJS)
+    gulp.watch(source_pathes.img, images)
 }
+
 //============ Clean directory path function ============//
-function clean () {
-    return del (dist_dir)
+function clean() {
+    return del(dist_dir)
 }
 
-let build = gulp.series(clean, pugToHtml, sassToCss, js);
-let wathers = gulp.parallel(build, watchFiles, sync);
+let build = gulp.series(clean, toHTML, toCSS, toJS, images);
+let watchers = gulp.parallel(build, watchFiles, sync);
 
-gulp.task('default', wathers);
+gulp.task('default', watchers);
