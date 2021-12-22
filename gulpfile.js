@@ -21,8 +21,8 @@ const source_dir = 'src';
 const dist_dir = 'dist';
 
 const source_pathes = {
-    main_pug: `${source_dir}/*.html`,
-    all_pug: `${source_dir}/**/*.html`,
+    main_html: `${source_dir}/*.html`,
+    all_html: `${source_dir}/**/*.html`,
     main_sass: `${source_dir}/*.scss`,
     all_sass: `${source_dir}/**/*.scss`,
     main_js: `${source_dir}/*.js`,
@@ -39,7 +39,7 @@ const dist_pathes = {
 //============ build HTML ============//
 function toHTML() {
     return (
-        gulp.src(source_pathes.main_pug)
+        gulp.src(source_pathes.main_html)
             .pipe(fileinclude())
             .pipe(webpHtml())
             .pipe(gulp.dest(`${dist_dir}/`))
@@ -116,7 +116,7 @@ function sync() {
 
 //============ Watcher Functions ============//
 function watchFiles() {
-    gulp.watch(source_pathes.all_pug, toHTML)
+    gulp.watch(source_pathes.all_html, toHTML)
     gulp.watch(source_pathes.all_sass, toCSS)
     gulp.watch(source_pathes.all_js, toJS)
     gulp.watch(source_pathes.img, images)
